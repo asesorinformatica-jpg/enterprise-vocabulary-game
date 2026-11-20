@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<base target="_top">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root {
+  --blue:#2563eb;
+  --purple:#7c3aed;
+  --navy:#172554;
+  --green:#15803d;
+  --light:#eff6ff;
+  --grey:#64748b;
+}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:linear-gradient(135deg,#eff6ff,#f5f3ff);
+  color:#172033;
+}
+.container {
+  max-width:850px;
+  margin:30px auto;
+  padding:20px;
+}
+header {
+  text-align:center;
+  margin-bottom:25px;
+}
+header h1 {
+  color:var(--navy);
+  font-size:clamp(25px,5vw,38px);
+}
+header p {color:var(--grey)}
+.card {
+  background:white;
+  border-radius:20px;
+  padding:25px;
+  box-shadow:0 8px 30px #17255415;
+  margin-bottom:18px;
+}
+.levels {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-bottom:20px;
+}
+.level {
+  padding:15px 8px;
+  border-radius:12px;
+  background:#e2e8f0;
+  text-align:center;
+  font-size:13px;
+  font-weight:bold;
+}
+.level.active {background:#dbeafe;color:#1d4ed8}
+.level.done {background:#dcfce7;color:#166534}
+.progress {
+  height:9px;
+  background:#e2e8f0;
+  border-radius:20px;
+  overflow:hidden;
+}
+#progressBar {
+  height:100%;
+  width:0;
+  background:linear-gradient(90deg,var(--blue),var(--purple));
+  transition:.3s;
+}
+.challenge {
+  background:linear-gradient(135deg,#172554,#4338ca);
+  color:white;
+  padding:35px 20px;
+  border-radius:16px;
+  text-align:center;
+  margin:20px 0;
+}
+.challenge h2 {font-size:25px}
+.challenge p {color:#dbeafe}
+button {
+  border:0;
+  border-radius:10px;
+  padding:13px 18px;
+  font-weight:bold;
+  cursor:pointer;
+  margin:5px;
+}
+.primary {background:var(--blue);color:white}
+.secondary {background:#e0e7ff;color:#1e3a8a}
+.success {background:#dcfce7;color:#166534}
+button:disabled {opacity:.4;cursor:not-allowed}
+.actions {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:8px;
+}
+#status {
+  text-align:center;
+  color:var(--grey);
+  min-height:30px;
+  margin:15px 0;
+}
+#feedback {
+  padding:16px;
+  border-radius:12px;
+  display:none;
+  line-height:1.6;
+  margin-top:15px;
+}
+.good {display:block!important;background:#dcfce7;color:#166534}
+.try {display:block!important;background:#ffedd5;color:#9a3412}
+.info {display:block!important;background:#dbeafe;color:#1e40af}
+#answer {
+  display:none;
+  background:#f8fafc;
+  border:1px dashed #94a3b8;
+  border-radius:12px;
+  padding:15px;
+  text-align:center;
+  margin:15px 0;
+}
+.note {
+  background:#ecfeff;
+  border-left:4px solid #06b6d4;
+  padding:14px;
+  border-radius:8px;
+  font-size:14px;
+  line-height:1.5;
+}
+#finish {display:none;text-align:center}
+@media(max-width:550px) {
+  .levels {grid-template-columns:1fr}
+  .container {padding:12px}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+  <h1>💡 Enterprise Vocabulary Challenge</h1>
+  <p>Cambridge IGCSE Enterprise 0454 | Grade 9</p>
+  <p><b>LISTEN · REMEMBER · SPEAK</b></p>
+</header>
+
+<div class="card" id="intro">
+  <h2>Welcome, Enterprise Explorer!</h2>
+  <p>Your mission is to improve your business vocabulary and auditory working memory.</p>
+  <p>Listen carefully, rehearse the words silently and repeat them when the microphone is activated.</p>
+  <div class="actions">
+    <button class="primary" onclick="startGame()">START GAME</button>
+  </div>
+</div>
+
+<div class="levels">
+  <div class="level active" id="l1">LEVEL 1<br>WORD RECALL</div>
+  <div class="level" id="l2">LEVEL 2<br>PHRASE RECALL</div>
+  <div class="level" id="l3">LEVEL 3<br>CONTEXT RECALL</div>
+</div>
+
+<div class="card" id="game" style="display:none">
+
+  <p id="levelName"><b>LEVEL 1</b></p>
+  <p id="round"></p>
+
+  <div class="progress">
+    <div id="progressBar"></div>
+  </div>
+
+  <div class="challenge">
+    <div style="font-size:35px">🎧</div>
+    <h2 id="title">Listen and memorise</h2>
+    <p id="instruction">Pay attention to the sounds.</p>
+  </div>
+
+  <div id="answer">
+    <h2 id="word"></h2>
+    <p id="meaning"></p>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="listen" onclick="listen()">▶ Listen & Memorise</button>
+    <button class="secondary" id="record" onclick="record()" disabled>🎙 Start Speaking</button>
+    <button class="secondary" onclick="reveal()">Reveal Answer</button>
+  </div>
+
+  <p id="status" aria-live="polite">Press Listen & Memorise to begin.</p>
+
+  <div id="feedback" aria-live="polite"></div>
+
+  <div class="actions" id="nextActions" style="display:none">
+    <button class="primary" id="next" onclick="nextItem()">Next Challenge →</button>
+    <button class="secondary" onclick="retry()">Try Again</button>
+  </div>
+
+  <div class="note">
+    🧠 <b>Memory strategy:</b> Repeat the sound silently while you wait.
+    In Levels 2 and 3, remember the words in the correct order.
+  </div>
+</div>
+
+<div class="card" id="finish">
+  <h1>🏆 Congratulations!</h1>
+  <h2>You completed all three levels!</h2>
+  <p id="result"></p>
+  <button class="primary" onclick="location.reload()">Play Again</button>
+</div>
+
+</div>
+
+<script>
+const levels = [
+ {
+  name:"LEVEL 1 – WORD RECALL",
+  items:[
+   ["Entrepreneur","Emprendedor"],
+   ["Stakeholder","Grupo de interés"],
+   ["Profit","Beneficio económico"]
+  ]
+ },
+ {
+  name:"LEVEL 2 – PHRASE RECALL",
+  items:[
+   ["Customer needs – Market research","Necesidades del cliente – investigación de mercado"],
+   ["Business opportunity – Value proposition","Oportunidad de negocio – propuesta de valor"],
+   ["Risk assessment – Action plan – Resources","Evaluación de riesgos – plan de acción – recursos"]
+  ]
+ },
+ {
+  name:"LEVEL 3 – CONTEXT RECALL",
+  items:[
+   ["The enterprise identified a gap in the market.",
+    "La empresa identificó una necesidad no atendida en el mercado."],
+   ["The team monitored progress and evaluated the outcome.",
+    "El equipo hizo seguimiento del progreso y evaluó el resultado."],
+   ["Customer feedback can improve the business idea.",
+    "La retroalimentación de los clientes puede mejorar la idea de negocio."]
+  ]
+ }
+];
+
+let level=0;
+let item=0;
+let score=0;
+let completed=0;
+let recognition=null;
+let passed=false;
+
+const total=9;
+const $=id=>document.getElementById(id);
+
+function normalise(text) {
+ return text.toLowerCase()
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g,"")
+  .replace(/[^a-z0-9\s]/g," ")
+  .replace(/\s+/g," ").trim();
+}
+
+// Compares recognised text with the target.
+// This is transcript matching, not phonetic scoring.
+function similarity(a,b) {
+ const x=normalise(a).split(" ");
+ const y=normalise(b).split(" ");
+ if(!x.length || !y.length) return 0;
+
+ const dp=Array.from({length:x.length+1},
+  ()=>Array(y.length+1).fill(0));
+
+ for(let i=0;i<=x.length;i++) dp[i][0]=i;
+ for(let j=0;j<=y.length;j++) dp[0][j]=j;
+
+ for(let i=1;i<=x.length;i++) {
+  for(let j=1;j<=y.length;j++) {
+   const cost=x[i-1]===y[j-1]?0:1;
+   dp[i][j]=Math.min(
+    dp[i-1][j]+1,
+    dp[i][j-1]+1,
+    dp[i-1][j-1]+cost
+   );
+  }
+ }
+ return Math.max(0,1-dp[x.length][y.length]/
+  Math.max(x.length,y.length));
+}
+
+function startGame() {
+ $("intro").style.display="none";
+ $("finish").style.display="none";
+ $("game").style.display="block";
+ level=0;item=0;score=0;completed=0;
+ showItem();
+}
+
+function showItem() {
+ const current=levels[level].items[item];
+
+ $("levelName").textContent=levels[level].name;
+ $("round").textContent="Challenge "+(item+1)+" of 3";
+ $("word").textContent=current[0];
+ $("meaning").textContent=current[1];
+ $("answer").style.display="none";
+ $("feedback").style.display="none";
+ $("nextActions").style.display="none";
+ $("listen").disabled=false;
+ $("record").disabled=true;
+ $("status").textContent="Listen carefully and rehearse silently.";
+ $("title").textContent="Listen and memorise";
+ passed=false;
+
+ for(let i=0;i<3;i++) {
+  $("l"+(i+1)).className=
+   "level "+(i<level?"done":i===level?"active":"");
+ }
+
+ $("progressBar").style.width=(completed/total*100)+"%";
+}
+
+function listen() {
+ if(!window.speechSynthesis) {
+  $("status").textContent="Text-to-speech is not supported.";
+  return;
+ }
+
+ const text=levels[level].items[item][0];
+ speechSynthesis.cancel();
+
+ const utterance=new SpeechSynthesisUtterance(text);
+ utterance.lang="en-GB";
+ utterance.rate=.82;
+
+ $("listen").disabled=true;
+ $("record").disabled=true;
+ $("status").textContent="Listen and remember the sounds...";
+
+ utterance.onend=()=>{
+  let count=3;
+  $("status").textContent="Silent rehearsal: "+count;
+
+  const timer=setInterval(()=>{
+   count--;
+   if(count>0) {
+    $("status").textContent="Silent rehearsal: "+count;
+   } else {
+    clearInterval(timer);
+    $("status").textContent="Your turn! Press Start Speaking.";
+    $("record").disabled=false;
+    $("listen").disabled=false;
+   }
+  },1000);
+ };
+
+ utterance.onerror=()=>{
+  $("status").textContent="Audio error. Please try again.";
+  $("listen").disabled=false;
+ };
+
+ speechSynthesis.speak(utterance);
+}
+
+function record() {
+ const SR=window.SpeechRecognition||
+          window.webkitSpeechRecognition;
+
+ if(!SR) {
+  $("status").textContent=
+   "Speech recognition is unavailable. Please use an updated Chrome or Edge browser.";
+  return;
+ }
+
+ recognition=new SR();
+ recognition.lang="en-GB";
+ recognition.continuous=false;
+ recognition.interimResults=false;
+
+ $("record").disabled=true;
+ $("listen").disabled=true;
+ $("status").textContent="🎙 Listening... Speak clearly.";
+
+ recognition.onresult=(event)=>{
+  const heard=event.results[0][0].transcript;
+  checkAnswer(heard);
+ };
+
+ recognition.onerror=(event)=>{
+  $("status").textContent=
+   event.error==="not-allowed"
+   ?"Please allow microphone access in your browser."
+   :"Speech was not recognised. Please try again.";
+  $("record").disabled=false;
+  $("listen").disabled=false;
+ };
+
+ recognition.onend=()=>{
+  if(!passed) {
+   $("record").disabled=false;
+   $("listen").disabled=false;
+  }
+ };
+
+ try {
+  recognition.start();
+ } catch(e) {
+  $("status").textContent="Microphone could not start. Try again.";
+  $("record").disabled=false;
+  $("listen").disabled=false;
+ }
+}
+
+function checkAnswer(heard) {
+ const target=levels[level].items[item][0];
+ const ratio=similarity(target,heard);
+ passed=ratio>=.78;
+
+ $("answer").style.display="block";
+ $("feedback").style.display="block";
+ $("nextActions").style.display="flex";
+
+ if(passed) {
+  score++;
+  completed++;
+  $("feedback").className="good";
+  $("feedback").innerHTML=
+   "<b>✓ Good recall!</b><br>"+
+   "The browser recognised: <b></b><br>"+
+   "Your response matched the target sufficiently.";
+  $("feedback").querySelector("b:last-of-type")?.remove();
+  $("feedback").insertAdjacentText("beforeend"," ");
+  $("next").style.display="inline-block";
+  $("next").disabled=false;
+ } else {
+  $("feedback").className="try";
+  $("feedback").innerHTML=
+   "<b>↻ Keep practising!</b><br>"+
+   "The browser recognised: <b></b><br>"+
+   "Listen again and try to reproduce the complete expression.";
+  $("next").style.display="none";
+ }
+
+ const heardLine=document.createElement("p");
+ heardLine.textContent="Recognised transcript: "+heard;
+ $("feedback").appendChild(heardLine);
+
+ $("status").textContent=
+  "Transcript similarity: "+Math.round(ratio*100)+"%. "+
+  "This is not a phonetic pronunciation score.";
+
+ $("progressBar").style.width=(completed/total*100)+"%";
+}
+
+function reveal() {
+ $("answer").style.display="block";
+ $("status").textContent=
+  "Study the vocabulary and practise saying it aloud.";
+}
+
+function retry() {
+ if(recognition) {
+  try {recognition.abort();}catch(e){}
+ }
+ showItem();
+}
+
+function nextItem() {
+ if(!passed)return;
+
+ if(item<2) {
+  item++;
+  showItem();
+ } else if(level<2) {
+  level++;
+  item=0;
+  showItem();
+ } else {
+  finishGame();
+ }
+}
+
+function finishGame() {
+ $("game").style.display="none";
+ $("finish").style.display="block";
+ $("result").textContent=
+  "Successful recall challenges: "+score+" out of "+total+".";
+ $("progressBar").style.width="100%";
+}
+</script>
+</body>
+</html>
